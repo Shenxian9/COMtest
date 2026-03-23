@@ -6,10 +6,7 @@
 
 class ModbusRtuSlave;
 class QComboBox;
-class QFormLayout;
-class QGroupBox;
 class QLabel;
-class QLineEdit;
 class QPushButton;
 class QPlainTextEdit;
 class QSpinBox;
@@ -62,18 +59,25 @@ private:
     QDoubleSpinBox *m_instantFlowSpin = nullptr;
     QDoubleSpinBox *m_instantVelocitySpin = nullptr;
     QDoubleSpinBox *m_zeroCutoffSpin = nullptr;
-    QComboBox *m_languageCombo = nullptr;
-    QComboBox *m_sensitivityCombo = nullptr;
     QDoubleSpinBox *m_pipeOuterDiameterSpin = nullptr;
     QDoubleSpinBox *m_pipeWallThicknessSpin = nullptr;
-    QComboBox *m_pipeMaterialCombo = nullptr;
-    QComboBox *m_outputModeCombo = nullptr;
-    QComboBox *m_pulseEquivalentCombo = nullptr;
+    QDoubleSpinBox *m_calibrationFactorSpin = nullptr;
     QDoubleSpinBox *m_analogUpperSpin = nullptr;
     QDoubleSpinBox *m_analogLowerSpin = nullptr;
     QDoubleSpinBox *m_alarmUpperSpin = nullptr;
     QDoubleSpinBox *m_alarmLowerSpin = nullptr;
     QDoubleSpinBox *m_fixedErrorCompSpin = nullptr;
+
+    QComboBox *m_pulseEquivalentCombo = nullptr;
+    QSpinBox *m_serialYearSpin = nullptr;
+    QSpinBox *m_serialWeekSpin = nullptr;
+    QSpinBox *m_serialProductNumberSpin = nullptr;
+    QSpinBox *m_serialSequenceSpin = nullptr;
+    QComboBox *m_outputModeCombo = nullptr;
+    QComboBox *m_pipeMaterialCombo = nullptr;
+    QComboBox *m_languageCombo = nullptr;
+    QComboBox *m_sensitivityCombo = nullptr;
+    QComboBox *m_screenOrientationCombo = nullptr;
 
     bool m_updatingTable = false;
 };

@@ -80,15 +80,6 @@ bool RegisterStore::writeMultipleHoldingRegisters(uint16_t start, const QVector<
         changed.append(address);
     }
 
-    if (start <= kAddrClearTotal && (start + values.size()) > kAddrClearTotal && reg(kAddrClearTotal) == 1) {
-        setFloat(kAddrPowerOnTotal, 0.0f);
-        setReg(kAddrClearTotal, 0);
-        changed.append(kAddrPowerOnTotal);
-        changed.append(kAddrPowerOnTotal + 1);
-        changed.append(kAddrClearTotal);
-        emit logMessage(QStringLiteral("检测到“累积量清零”命令，已将上电累计清零。"));
-    }
-
     emit registersChanged(changed);
     return true;
 }
@@ -200,18 +191,24 @@ RegisterStore::QuickDebugValues RegisterStore::quickDebugValues() const
     values.instantFlow = getFloat(kAddrInstantFlow);
     values.instantVelocity = getFloat(kAddrInstantVelocity);
     values.zeroCutoff = getFloat(kAddrZeroCutoff);
-    values.language = reg(8197);
-    values.sensitivity = reg(kAddrSensitivity);
     values.pipeOuterDiameter = getFloat(kAddrPipeOuterDiameter);
     values.pipeWallThickness = getFloat(kAddrPipeWallThickness);
-    values.pipeMaterial = reg(kAddrPipeMaterial);
-    values.outputMode = reg(kAddrOutputMode);
-    values.pulseEquivalent = reg(kAddrPulseEquivalent);
+    values.calibrationFactor = getFloat(kAddrCalibrationFactor);
     values.analogUpper = getFloat(kAddrAnalogUpper);
     values.analogLower = getFloat(kAddrAnalogLower);
     values.alarmUpper = getFloat(kAddrAlarmUpper);
     values.alarmLower = getFloat(kAddrAlarmLower);
     values.fixedErrorCompensation = getFloat(kAddrFixedErrorComp);
+    values.pulseEquivalent = reg(kAddrPulseEquivalent);
+    values.serialYear = reg(kAddrSerialYear);
+    values.serialWeek = reg(kAddrSerialWeek);
+    values.serialProductNumber = reg(kAddrSerialProductNumber);
+    values.serialSequence = reg(kAddrSerialSequence);
+    values.outputMode = reg(kAddrOutputMode);
+    values.pipeMaterial = reg(kAddrPipeMaterial);
+    values.language = reg(kAddrLanguage);
+    values.sensitivity = reg(kAddrSensitivity);
+    values.screenOrientation = reg(kAddrScreenOrientation);
     return values;
 }
 
@@ -220,18 +217,24 @@ void RegisterStore::applyQuickDebugValues(const QuickDebugValues &values)
     setFloat(kAddrInstantFlow, values.instantFlow);
     setFloat(kAddrInstantVelocity, values.instantVelocity);
     setFloat(kAddrZeroCutoff, values.zeroCutoff);
-    setReg(8197, values.language);
-    setReg(kAddrSensitivity, values.sensitivity);
     setFloat(kAddrPipeOuterDiameter, values.pipeOuterDiameter);
     setFloat(kAddrPipeWallThickness, values.pipeWallThickness);
-    setReg(kAddrPipeMaterial, values.pipeMaterial);
-    setReg(kAddrOutputMode, values.outputMode);
-    setReg(kAddrPulseEquivalent, values.pulseEquivalent);
+    setFloat(kAddrCalibrationFactor, values.calibrationFactor);
     setFloat(kAddrAnalogUpper, values.analogUpper);
     setFloat(kAddrAnalogLower, values.analogLower);
     setFloat(kAddrAlarmUpper, values.alarmUpper);
     setFloat(kAddrAlarmLower, values.alarmLower);
     setFloat(kAddrFixedErrorComp, values.fixedErrorCompensation);
+    setReg(kAddrPulseEquivalent, values.pulseEquivalent);
+    setReg(kAddrSerialYear, values.serialYear);
+    setReg(kAddrSerialWeek, values.serialWeek);
+    setReg(kAddrSerialProductNumber, values.serialProductNumber);
+    setReg(kAddrSerialSequence, values.serialSequence);
+    setReg(kAddrOutputMode, values.outputMode);
+    setReg(kAddrPipeMaterial, values.pipeMaterial);
+    setReg(kAddrLanguage, values.language);
+    setReg(kAddrSensitivity, values.sensitivity);
+    setReg(kAddrScreenOrientation, values.screenOrientation);
 
     QVector<uint16_t> changed;
     for (const auto &entry : m_entries) {
@@ -329,51 +332,48 @@ void RegisterStore::initializeDefinitions()
     m_entries.clear();
     m_entryByAddress.clear();
 
-    defineRegister({8192, QStringLiteral("瞬时流量"), RegisterKind::Holding, 2, RegisterFormat::Float, false, true,
-                    QStringLiteral("实时模拟值，float，大端。"), false});
-    defineRegister({8194, QStringLiteral("瞬时流速"), RegisterKind::Holding, 2, RegisterFormat::Float, false, true,
-                    QStringLiteral("实时模拟值，float，大端。"), false});
-    defineRegister({8196, QStringLiteral("零切下限"), RegisterKind::Holding, 2, RegisterFormat::Float, true, true,
-                    QStringLiteral("调试参数，按 float 处理。"), false});
-    // 需求文字中 8196 后接 8197/8198/8200/8202/8203，存在地址连续性歧义；本模拟器严格按用户给定地址实现。
-    defineRegister({8197, QStringLiteral("语言"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
-                    QStringLiteral("0=简体中文，1=English。"), false});
-    defineRegister({8198, QStringLiteral("灵敏度"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
-                    QStringLiteral("0=低，1=中，2=高。"), false});
-    defineRegister({8200, QStringLiteral("管道外径"), RegisterKind::Holding, 2, RegisterFormat::Float, true, true,
+    defineRegister({kAddrInstantFlow, QStringLiteral("瞬时流量"), RegisterKind::Holding, 2, RegisterFormat::Float, false, true,
+                    QStringLiteral("浮点数（大端），瞬时流量，用于调试。"), false});
+    defineRegister({kAddrInstantVelocity, QStringLiteral("瞬时流速"), RegisterKind::Holding, 2, RegisterFormat::Float, false, true,
+                    QStringLiteral("浮点数（大端），瞬时流速，用于调试。"), false});
+    defineRegister({kAddrZeroCutoff, QStringLiteral("零切下限"), RegisterKind::Holding, 2, RegisterFormat::Float, true, true,
+                    QStringLiteral("零切值，程序单位（立方米每小时）。"), false});
+    defineRegister({kAddrPipeOuterDiameter, QStringLiteral("管道外径"), RegisterKind::Holding, 2, RegisterFormat::Float, true, true,
                     QStringLiteral("单位 mm。"), false});
-    defineRegister({8202, QStringLiteral("管道壁厚"), RegisterKind::Holding, 2, RegisterFormat::Float, true, true,
+    defineRegister({kAddrPipeWallThickness, QStringLiteral("管道壁厚"), RegisterKind::Holding, 2, RegisterFormat::Float, true, true,
                     QStringLiteral("单位 mm。"), false});
-    defineRegister({8203, QStringLiteral("管道材质"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
-                    QStringLiteral("0=PVC，1=金属，2=合金。"), false});
-
     defineRegister({kAddrCalibrationFactor, QStringLiteral("校准系数"), RegisterKind::Holding, 2, RegisterFormat::Float, true, true,
-                    QStringLiteral("临时模拟地址：文档未明确起始地址。"), true});
-    defineRegister({kAddrPulseEquivalent, QStringLiteral("脉冲当量"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
-                    QStringLiteral("临时模拟地址：0=0.1mL, 1=1mL, 2=10mL, 3=100mL, 4=1L, 5=10L, 6=100L, 7=1000L。"), true});
-    // 文档一处写“共6字节”，另一处写 4 个 16 位字段。此处按 4x16bit=8 字节实现，更便于 Modbus 映射。
-    defineRegister({kAddrSerialYear, QStringLiteral("序列号字段"), RegisterKind::Holding, 4, RegisterFormat::Raw, true, true,
-                    QStringLiteral("临时模拟地址：依次为生产年份、生产周、产品型号、生产序列。文档对此长度描述存在歧义。"), true});
-    defineRegister({kAddrOutputMode, QStringLiteral("输出模式"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
-                    QStringLiteral("临时模拟地址：0=4-20mA，1=PNP脉冲，2=NPN脉冲，3=报警输出。"), true});
+                    QStringLiteral("校准系数，默认 1.00。"), false});
     defineRegister({kAddrAnalogUpper, QStringLiteral("模拟上限"), RegisterKind::Holding, 2, RegisterFormat::Float, true, true,
-                    QStringLiteral("临时模拟地址。"), true});
+                    QStringLiteral("程序单位（立方米每小时）。"), false});
     defineRegister({kAddrAnalogLower, QStringLiteral("模拟下限"), RegisterKind::Holding, 2, RegisterFormat::Float, true, true,
-                    QStringLiteral("临时模拟地址。"), true});
+                    QStringLiteral("程序单位（立方米每小时）。"), false});
     defineRegister({kAddrAlarmUpper, QStringLiteral("报警上限"), RegisterKind::Holding, 2, RegisterFormat::Float, true, true,
-                    QStringLiteral("临时模拟地址。"), true});
+                    QStringLiteral("程序单位（立方米每小时）。"), false});
     defineRegister({kAddrAlarmLower, QStringLiteral("报警下限"), RegisterKind::Holding, 2, RegisterFormat::Float, true, true,
-                    QStringLiteral("临时模拟地址。"), true});
+                    QStringLiteral("程序单位（立方米每小时）。"), false});
     defineRegister({kAddrFixedErrorComp, QStringLiteral("固定误差补偿"), RegisterKind::Holding, 2, RegisterFormat::Float, true, true,
-                    QStringLiteral("临时模拟地址。"), true});
-    defineRegister({kAddrPowerOnTotal, QStringLiteral("上电累计"), RegisterKind::Holding, 2, RegisterFormat::Float, true, true,
-                    QStringLiteral("临时模拟地址。"), true});
-    defineRegister({kAddrClearTotal, QStringLiteral("累积量清零"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
-                    QStringLiteral("临时模拟地址，写 1 时自动将上电累计清零。"), true});
-    defineRegister({kAddrTablePoints, QStringLiteral("表格(8个点)"), RegisterKind::Holding, 16, RegisterFormat::Raw, true, true,
-                    QStringLiteral("临时模拟地址，每点占 2 个寄存器。"), true});
-    defineRegister({kAddrTableFactors, QStringLiteral("表格(8个修正系数)"), RegisterKind::Holding, 16, RegisterFormat::Raw, true, true,
-                    QStringLiteral("临时模拟地址，每个系数占 2 个寄存器。"), true});
+                    QStringLiteral("算法补偿值。"), false});
+    defineRegister({kAddrPulseEquivalent, QStringLiteral("脉冲当量"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
+                    QStringLiteral("0=0.1mL，1=1mL，2=10mL，3=100mL，4=1L，5=10L，6=100L，7=1000L。"), false});
+    defineRegister({kAddrSerialYear, QStringLiteral("序列号-生产年份"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
+                    QStringLiteral("生产年份。"), false});
+    defineRegister({kAddrSerialWeek, QStringLiteral("序列号-生产周"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
+                    QStringLiteral("生产周。"), false});
+    defineRegister({kAddrSerialProductNumber, QStringLiteral("序列号-产品编号"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
+                    QStringLiteral("产品编号。"), false});
+    defineRegister({kAddrSerialSequence, QStringLiteral("序列号-生产序列"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
+                    QStringLiteral("生产序列。"), false});
+    defineRegister({kAddrOutputMode, QStringLiteral("输出模式"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
+                    QStringLiteral("0=4-20mA，1=PNP脉冲，2=NPN脉冲，3=报警输出。"), false});
+    defineRegister({kAddrPipeMaterial, QStringLiteral("管道材质"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
+                    QStringLiteral("0=PVC，1=金属，2=合金。"), false});
+    defineRegister({kAddrLanguage, QStringLiteral("语言"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
+                    QStringLiteral("1=简体中文，0=English。"), false});
+    defineRegister({kAddrSensitivity, QStringLiteral("灵敏度"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
+                    QStringLiteral("0=低，1=中，2=高。"), false});
+    defineRegister({kAddrScreenOrientation, QStringLiteral("屏幕方向"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
+                    QStringLiteral("0=正向，1=旋转90°，2=旋转180°，4=旋转270°。"), false});
 }
 
 void RegisterStore::initializeDefaults()
@@ -385,34 +385,27 @@ void RegisterStore::initializeDefaults()
         }
     }
 
-    setFloat(8192, 12.34f);
-    setFloat(8194, 1.23f);
-    setFloat(8196, 0.10f);
-    setReg(8197, 0);
-    setReg(8198, 1);
-    setFloat(8200, 108.0f);
-    setFloat(8202, 4.5f);
-    setReg(8203, 1);
-
-    setFloat(kAddrCalibrationFactor, 1.0f);
-    setReg(kAddrPulseEquivalent, 4);
-    setReg(kAddrSerialYear, 2026);
-    setReg(kAddrSerialYear + 1, 12);
-    setReg(kAddrSerialYear + 2, 1001);
-    setReg(kAddrSerialYear + 3, 1);
-    setReg(kAddrOutputMode, 0);
+    setFloat(kAddrInstantFlow, 12.34f);
+    setFloat(kAddrInstantVelocity, 1.23f);
+    setFloat(kAddrZeroCutoff, 0.10f);
+    setFloat(kAddrPipeOuterDiameter, 108.0f);
+    setFloat(kAddrPipeWallThickness, 4.5f);
+    setFloat(kAddrCalibrationFactor, 1.00f);
     setFloat(kAddrAnalogUpper, 100.0f);
     setFloat(kAddrAnalogLower, 0.0f);
     setFloat(kAddrAlarmUpper, 120.0f);
     setFloat(kAddrAlarmLower, -10.0f);
     setFloat(kAddrFixedErrorComp, 0.0f);
-    setFloat(kAddrPowerOnTotal, 1234.5f);
-    setReg(kAddrClearTotal, 0);
-
-    for (int i = 0; i < 8; ++i) {
-        setFloat(kAddrTablePoints + i * 2, static_cast<float>(i) * 10.0f);
-        setFloat(kAddrTableFactors + i * 2, 1.0f + static_cast<float>(i) * 0.01f);
-    }
+    setReg(kAddrPulseEquivalent, 4);
+    setReg(kAddrSerialYear, 2026);
+    setReg(kAddrSerialWeek, 12);
+    setReg(kAddrSerialProductNumber, 1001);
+    setReg(kAddrSerialSequence, 1);
+    setReg(kAddrOutputMode, 0);
+    setReg(kAddrPipeMaterial, 1);
+    setReg(kAddrLanguage, 1);
+    setReg(kAddrSensitivity, 1);
+    setReg(kAddrScreenOrientation, 0);
 }
 
 void RegisterStore::defineRegister(const RegisterEntry &entry)
@@ -433,28 +426,32 @@ bool RegisterStore::containsRange(uint16_t start, uint16_t count) const
 
 bool RegisterStore::isRangeWritable(uint16_t start, uint16_t count, QString *errorMessage) const
 {
-    for (const auto &entry : m_entries) {
-        if (start >= entry.address && start < entry.address + entry.count) {
-            if (start + count > entry.address + entry.count) {
-                if (errorMessage) {
-                    *errorMessage = QStringLiteral("写入不能跨越寄存器定义边界");
-                }
-                return false;
+    for (uint16_t i = 0; i < count; ++i) {
+        const auto *entry = entryContainingAddress(start + i);
+        if (!entry) {
+            if (errorMessage) {
+                *errorMessage = QStringLiteral("未找到寄存器定义");
             }
-            if (!entry.writableByModbus) {
-                if (errorMessage) {
-                    *errorMessage = QStringLiteral("目标寄存器为只读");
-                }
-                return false;
+            return false;
+        }
+        if (!entry->writableByModbus) {
+            if (errorMessage) {
+                *errorMessage = QStringLiteral("目标寄存器为只读");
             }
-            return true;
+            return false;
         }
     }
+    return true;
+}
 
-    if (errorMessage) {
-        *errorMessage = QStringLiteral("未找到可写寄存器定义");
+const RegisterEntry *RegisterStore::entryContainingAddress(uint16_t address) const
+{
+    for (const auto &entry : m_entries) {
+        if (address >= entry.address && address < entry.address + entry.count) {
+            return &entry;
+        }
     }
-    return false;
+    return nullptr;
 }
 
 quint16 RegisterStore::reg(uint16_t address) const

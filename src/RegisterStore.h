@@ -16,23 +16,24 @@ public:
         float instantFlow = 12.34f;
         float instantVelocity = 1.23f;
         float zeroCutoff = 0.10f;
-        quint16 language = 0;
-        quint16 sensitivity = 1;
         float pipeOuterDiameter = 108.0f;
         float pipeWallThickness = 4.5f;
-        quint16 pipeMaterial = 1;
-        quint16 outputMode = 0;
-        quint16 pulseEquivalent = 4;
+        float calibrationFactor = 1.00f;
         float analogUpper = 100.0f;
         float analogLower = 0.0f;
         float alarmUpper = 120.0f;
         float alarmLower = -10.0f;
         float fixedErrorCompensation = 0.0f;
-    };
-
-    struct AddressRange {
-        uint16_t start = 0;
-        uint16_t count = 0;
+        quint16 pulseEquivalent = 4;
+        quint16 serialYear = 2026;
+        quint16 serialWeek = 12;
+        quint16 serialProductNumber = 1001;
+        quint16 serialSequence = 1;
+        quint16 outputMode = 0;
+        quint16 pipeMaterial = 1;
+        quint16 language = 1;
+        quint16 sensitivity = 1;
+        quint16 screenOrientation = 0;
     };
 
     explicit RegisterStore(QObject *parent = nullptr);
@@ -40,25 +41,24 @@ public:
     static constexpr uint16_t kAddrInstantFlow = 8192;
     static constexpr uint16_t kAddrInstantVelocity = 8194;
     static constexpr uint16_t kAddrZeroCutoff = 8196;
-    static constexpr uint16_t kAddrSensitivity = 8198;
-    static constexpr uint16_t kAddrPipeOuterDiameter = 8200;
-    static constexpr uint16_t kAddrPipeWallThickness = 8202;
-    static constexpr uint16_t kAddrPipeMaterial = 8203;
-
-    static constexpr uint16_t kAddrTempBase = 8300;
-    static constexpr uint16_t kAddrCalibrationFactor = 8300;
-    static constexpr uint16_t kAddrPulseEquivalent = 8302;
-    static constexpr uint16_t kAddrSerialYear = 8303;
-    static constexpr uint16_t kAddrOutputMode = 8307;
-    static constexpr uint16_t kAddrAnalogUpper = 8308;
-    static constexpr uint16_t kAddrAnalogLower = 8310;
-    static constexpr uint16_t kAddrAlarmUpper = 8312;
-    static constexpr uint16_t kAddrAlarmLower = 8314;
-    static constexpr uint16_t kAddrFixedErrorComp = 8316;
-    static constexpr uint16_t kAddrPowerOnTotal = 8318;
-    static constexpr uint16_t kAddrClearTotal = 8320;
-    static constexpr uint16_t kAddrTablePoints = 8321;
-    static constexpr uint16_t kAddrTableFactors = 8337;
+    static constexpr uint16_t kAddrPipeOuterDiameter = 8198;
+    static constexpr uint16_t kAddrPipeWallThickness = 8200;
+    static constexpr uint16_t kAddrCalibrationFactor = 8202;
+    static constexpr uint16_t kAddrAnalogUpper = 8204;
+    static constexpr uint16_t kAddrAnalogLower = 8206;
+    static constexpr uint16_t kAddrAlarmUpper = 8208;
+    static constexpr uint16_t kAddrAlarmLower = 8210;
+    static constexpr uint16_t kAddrFixedErrorComp = 8212;
+    static constexpr uint16_t kAddrPulseEquivalent = 8214;
+    static constexpr uint16_t kAddrSerialYear = 8215;
+    static constexpr uint16_t kAddrSerialWeek = 8216;
+    static constexpr uint16_t kAddrSerialProductNumber = 8217;
+    static constexpr uint16_t kAddrSerialSequence = 8218;
+    static constexpr uint16_t kAddrOutputMode = 8219;
+    static constexpr uint16_t kAddrPipeMaterial = 8220;
+    static constexpr uint16_t kAddrLanguage = 8221;
+    static constexpr uint16_t kAddrSensitivity = 8222;
+    static constexpr uint16_t kAddrScreenOrientation = 8223;
 
     QVector<RegisterEntry> entries() const;
     const RegisterEntry *entryByAddress(uint16_t address) const;
@@ -90,7 +90,7 @@ private:
 
     bool containsRange(uint16_t start, uint16_t count) const;
     bool isRangeWritable(uint16_t start, uint16_t count, QString *errorMessage = nullptr) const;
-    QVector<uint16_t> collectChangedAddresses(uint16_t start, uint16_t count) const;
+    const RegisterEntry *entryContainingAddress(uint16_t address) const;
 
     quint16 reg(uint16_t address) const;
     void setReg(uint16_t address, quint16 value);

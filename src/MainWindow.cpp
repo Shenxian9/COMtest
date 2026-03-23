@@ -15,7 +15,6 @@
 #include <QPushButton>
 #include <QSerialPortInfo>
 #include <QSpinBox>
-#include <QSplitter>
 #include <QStatusBar>
 #include <QTableWidget>
 #include <QTableWidgetItem>
@@ -24,10 +23,12 @@
 #include <QDoubleSpinBox>
 
 namespace {
-QComboBox *createEnumCombo(const QStringList &items)
+QComboBox *createEnumCombo(const QList<QPair<QString, int>> &items)
 {
     auto *combo = new QComboBox;
-    combo->addItems(items);
+    for (const auto &item : items) {
+        combo->addItem(item.first, item.second);
+    }
     return combo;
 }
 
@@ -38,6 +39,24 @@ QDoubleSpinBox *createFloatSpin(double min, double max, double step = 0.1)
     spin->setDecimals(3);
     spin->setSingleStep(step);
     return spin;
+}
+
+QSpinBox *createIntegerSpin(int min, int max)
+{
+    auto *spin = new QSpinBox;
+    spin->setRange(min, max);
+    return spin;
+}
+
+void setComboByValue(QComboBox *combo, int value)
+{
+    const int index = combo->findData(value);
+    combo->setCurrentIndex(index >= 0 ? index : 0);
+}
+
+quint16 comboValue(const QComboBox *combo)
+{
+    return static_cast<quint16>(combo->currentData().toUInt());
 }
 }
 
@@ -101,7 +120,7 @@ void MainWindow::refreshRegisterTable()
     for (int row = 0; row < entries.size(); ++row) {
         const auto &entry = entries.at(row);
         auto *addressItem = new QTableWidgetItem(QString::number(entry.address));
-        auto *nameItem = new QTableWidgetItem(entry.name + (entry.temporaryAddress ? QStringLiteral(" [临时]") : QString()));
+        auto *nameItem = new QTableWidgetItem(entry.name);
         auto *kindItem = new QTableWidgetItem(registerKindToString(entry.kind));
         auto *countItem = new QTableWidgetItem(QString::number(entry.count));
         auto *formatItem = new QTableWidgetItem(registerFormatToString(entry.format));
@@ -139,18 +158,24 @@ void MainWindow::applyQuickDebugToRegisters()
     values.instantFlow = static_cast<float>(m_instantFlowSpin->value());
     values.instantVelocity = static_cast<float>(m_instantVelocitySpin->value());
     values.zeroCutoff = static_cast<float>(m_zeroCutoffSpin->value());
-    values.language = static_cast<quint16>(m_languageCombo->currentIndex());
-    values.sensitivity = static_cast<quint16>(m_sensitivityCombo->currentIndex());
     values.pipeOuterDiameter = static_cast<float>(m_pipeOuterDiameterSpin->value());
     values.pipeWallThickness = static_cast<float>(m_pipeWallThicknessSpin->value());
-    values.pipeMaterial = static_cast<quint16>(m_pipeMaterialCombo->currentIndex());
-    values.outputMode = static_cast<quint16>(m_outputModeCombo->currentIndex());
-    values.pulseEquivalent = static_cast<quint16>(m_pulseEquivalentCombo->currentIndex());
+    values.calibrationFactor = static_cast<float>(m_calibrationFactorSpin->value());
     values.analogUpper = static_cast<float>(m_analogUpperSpin->value());
     values.analogLower = static_cast<float>(m_analogLowerSpin->value());
     values.alarmUpper = static_cast<float>(m_alarmUpperSpin->value());
     values.alarmLower = static_cast<float>(m_alarmLowerSpin->value());
     values.fixedErrorCompensation = static_cast<float>(m_fixedErrorCompSpin->value());
+    values.pulseEquivalent = comboValue(m_pulseEquivalentCombo);
+    values.serialYear = static_cast<quint16>(m_serialYearSpin->value());
+    values.serialWeek = static_cast<quint16>(m_serialWeekSpin->value());
+    values.serialProductNumber = static_cast<quint16>(m_serialProductNumberSpin->value());
+    values.serialSequence = static_cast<quint16>(m_serialSequenceSpin->value());
+    values.outputMode = comboValue(m_outputModeCombo);
+    values.pipeMaterial = comboValue(m_pipeMaterialCombo);
+    values.language = comboValue(m_languageCombo);
+    values.sensitivity = comboValue(m_sensitivityCombo);
+    values.screenOrientation = comboValue(m_screenOrientationCombo);
     m_store.applyQuickDebugValues(values);
     appendLog(QStringLiteral("已将快速调试区参数应用到寄存器。"));
 }
@@ -246,7 +271,8 @@ QWidget *MainWindow::createSerialConfigGroup()
     auto *layout = new QFormLayout(group);
 
     m_portCombo = new QComboBox;
-    m_baudCombo = createEnumCombo({QStringLiteral("9600"), QStringLiteral("19200"), QStringLiteral("38400"), QStringLiteral("57600"), QStringLiteral("115200")});
+    m_baudCombo = new QComboBox;
+    m_baudCombo->addItems({QStringLiteral("9600"), QStringLiteral("19200"), QStringLiteral("38400"), QStringLiteral("57600"), QStringLiteral("115200")});
     m_dataBitsCombo = new QComboBox;
     m_dataBitsCombo->addItem(QStringLiteral("5"), QSerialPort::Data5);
     m_dataBitsCombo->addItem(QStringLiteral("6"), QSerialPort::Data6);
@@ -317,36 +343,52 @@ QWidget *MainWindow::createQuickDebugGroup()
     m_instantFlowSpin = createFloatSpin(-100000.0, 100000.0);
     m_instantVelocitySpin = createFloatSpin(-1000.0, 1000.0);
     m_zeroCutoffSpin = createFloatSpin(-1000.0, 1000.0);
-    m_languageCombo = createEnumCombo({QStringLiteral("简体中文"), QStringLiteral("English")});
-    m_sensitivityCombo = createEnumCombo({QStringLiteral("低"), QStringLiteral("中"), QStringLiteral("高")});
     m_pipeOuterDiameterSpin = createFloatSpin(0.0, 5000.0);
     m_pipeWallThicknessSpin = createFloatSpin(0.0, 100.0);
-    m_pipeMaterialCombo = createEnumCombo({QStringLiteral("PVC"), QStringLiteral("金属"), QStringLiteral("合金")});
-    m_outputModeCombo = createEnumCombo({QStringLiteral("4-20mA"), QStringLiteral("PNP脉冲"), QStringLiteral("NPN脉冲"), QStringLiteral("报警输出")});
-    m_pulseEquivalentCombo = createEnumCombo({QStringLiteral("0.1mL"), QStringLiteral("1mL"), QStringLiteral("10mL"), QStringLiteral("100mL"),
-                                              QStringLiteral("1L"), QStringLiteral("10L"), QStringLiteral("100L"), QStringLiteral("1000L")});
+    m_calibrationFactorSpin = createFloatSpin(-1000.0, 1000.0);
     m_analogUpperSpin = createFloatSpin(-100000.0, 100000.0);
     m_analogLowerSpin = createFloatSpin(-100000.0, 100000.0);
     m_alarmUpperSpin = createFloatSpin(-100000.0, 100000.0);
     m_alarmLowerSpin = createFloatSpin(-100000.0, 100000.0);
     m_fixedErrorCompSpin = createFloatSpin(-10000.0, 10000.0);
 
+    m_pulseEquivalentCombo = createEnumCombo({{QStringLiteral("0.1mL"), 0}, {QStringLiteral("1mL"), 1}, {QStringLiteral("10mL"), 2},
+                                              {QStringLiteral("100mL"), 3}, {QStringLiteral("1L"), 4}, {QStringLiteral("10L"), 5},
+                                              {QStringLiteral("100L"), 6}, {QStringLiteral("1000L"), 7}});
+    m_serialYearSpin = createIntegerSpin(2000, 3000);
+    m_serialWeekSpin = createIntegerSpin(1, 53);
+    m_serialProductNumberSpin = createIntegerSpin(0, 65535);
+    m_serialSequenceSpin = createIntegerSpin(0, 65535);
+    m_outputModeCombo = createEnumCombo({{QStringLiteral("4-20mA"), 0}, {QStringLiteral("PNP脉冲"), 1},
+                                         {QStringLiteral("NPN脉冲"), 2}, {QStringLiteral("报警输出"), 3}});
+    m_pipeMaterialCombo = createEnumCombo({{QStringLiteral("PVC"), 0}, {QStringLiteral("金属"), 1}, {QStringLiteral("合金"), 2}});
+    m_languageCombo = createEnumCombo({{QStringLiteral("简体中文"), 1}, {QStringLiteral("English"), 0}});
+    m_sensitivityCombo = createEnumCombo({{QStringLiteral("低"), 0}, {QStringLiteral("中"), 1}, {QStringLiteral("高"), 2}});
+    m_screenOrientationCombo = createEnumCombo({{QStringLiteral("正向"), 0}, {QStringLiteral("旋转90°"), 1},
+                                                {QStringLiteral("旋转180°"), 2}, {QStringLiteral("旋转270°"), 4}});
+
     int row = 0;
     layout->addWidget(new QLabel(QStringLiteral("瞬时流量")), row, 0); layout->addWidget(m_instantFlowSpin, row++, 1);
     layout->addWidget(new QLabel(QStringLiteral("瞬时流速")), row, 0); layout->addWidget(m_instantVelocitySpin, row++, 1);
     layout->addWidget(new QLabel(QStringLiteral("零切下限")), row, 0); layout->addWidget(m_zeroCutoffSpin, row++, 1);
-    layout->addWidget(new QLabel(QStringLiteral("语言")), row, 0); layout->addWidget(m_languageCombo, row++, 1);
-    layout->addWidget(new QLabel(QStringLiteral("灵敏度")), row, 0); layout->addWidget(m_sensitivityCombo, row++, 1);
     layout->addWidget(new QLabel(QStringLiteral("管道外径(mm)")), row, 0); layout->addWidget(m_pipeOuterDiameterSpin, row++, 1);
     layout->addWidget(new QLabel(QStringLiteral("管道壁厚(mm)")), row, 0); layout->addWidget(m_pipeWallThicknessSpin, row++, 1);
-    layout->addWidget(new QLabel(QStringLiteral("管道材质")), row, 0); layout->addWidget(m_pipeMaterialCombo, row++, 1);
-    layout->addWidget(new QLabel(QStringLiteral("输出模式")), row, 0); layout->addWidget(m_outputModeCombo, row++, 1);
-    layout->addWidget(new QLabel(QStringLiteral("脉冲当量")), row, 0); layout->addWidget(m_pulseEquivalentCombo, row++, 1);
+    layout->addWidget(new QLabel(QStringLiteral("校准系数")), row, 0); layout->addWidget(m_calibrationFactorSpin, row++, 1);
     layout->addWidget(new QLabel(QStringLiteral("模拟上限")), row, 0); layout->addWidget(m_analogUpperSpin, row++, 1);
     layout->addWidget(new QLabel(QStringLiteral("模拟下限")), row, 0); layout->addWidget(m_analogLowerSpin, row++, 1);
     layout->addWidget(new QLabel(QStringLiteral("报警上限")), row, 0); layout->addWidget(m_alarmUpperSpin, row++, 1);
     layout->addWidget(new QLabel(QStringLiteral("报警下限")), row, 0); layout->addWidget(m_alarmLowerSpin, row++, 1);
     layout->addWidget(new QLabel(QStringLiteral("固定误差补偿")), row, 0); layout->addWidget(m_fixedErrorCompSpin, row++, 1);
+    layout->addWidget(new QLabel(QStringLiteral("脉冲当量")), row, 0); layout->addWidget(m_pulseEquivalentCombo, row++, 1);
+    layout->addWidget(new QLabel(QStringLiteral("生产年份")), row, 0); layout->addWidget(m_serialYearSpin, row++, 1);
+    layout->addWidget(new QLabel(QStringLiteral("生产周")), row, 0); layout->addWidget(m_serialWeekSpin, row++, 1);
+    layout->addWidget(new QLabel(QStringLiteral("产品编号")), row, 0); layout->addWidget(m_serialProductNumberSpin, row++, 1);
+    layout->addWidget(new QLabel(QStringLiteral("生产序列")), row, 0); layout->addWidget(m_serialSequenceSpin, row++, 1);
+    layout->addWidget(new QLabel(QStringLiteral("输出模式")), row, 0); layout->addWidget(m_outputModeCombo, row++, 1);
+    layout->addWidget(new QLabel(QStringLiteral("管道材质")), row, 0); layout->addWidget(m_pipeMaterialCombo, row++, 1);
+    layout->addWidget(new QLabel(QStringLiteral("语言")), row, 0); layout->addWidget(m_languageCombo, row++, 1);
+    layout->addWidget(new QLabel(QStringLiteral("灵敏度")), row, 0); layout->addWidget(m_sensitivityCombo, row++, 1);
+    layout->addWidget(new QLabel(QStringLiteral("屏幕方向")), row, 0); layout->addWidget(m_screenOrientationCombo, row++, 1);
 
     auto *buttonLayout = new QHBoxLayout;
     auto *applyButton = new QPushButton(QStringLiteral("应用到寄存器"));
@@ -375,18 +417,24 @@ void MainWindow::refreshQuickDebugControls(const RegisterStore::QuickDebugValues
     m_instantFlowSpin->setValue(values.instantFlow);
     m_instantVelocitySpin->setValue(values.instantVelocity);
     m_zeroCutoffSpin->setValue(values.zeroCutoff);
-    m_languageCombo->setCurrentIndex(values.language);
-    m_sensitivityCombo->setCurrentIndex(values.sensitivity);
     m_pipeOuterDiameterSpin->setValue(values.pipeOuterDiameter);
     m_pipeWallThicknessSpin->setValue(values.pipeWallThickness);
-    m_pipeMaterialCombo->setCurrentIndex(values.pipeMaterial);
-    m_outputModeCombo->setCurrentIndex(values.outputMode);
-    m_pulseEquivalentCombo->setCurrentIndex(values.pulseEquivalent);
+    m_calibrationFactorSpin->setValue(values.calibrationFactor);
     m_analogUpperSpin->setValue(values.analogUpper);
     m_analogLowerSpin->setValue(values.analogLower);
     m_alarmUpperSpin->setValue(values.alarmUpper);
     m_alarmLowerSpin->setValue(values.alarmLower);
     m_fixedErrorCompSpin->setValue(values.fixedErrorCompensation);
+    setComboByValue(m_pulseEquivalentCombo, values.pulseEquivalent);
+    m_serialYearSpin->setValue(values.serialYear);
+    m_serialWeekSpin->setValue(values.serialWeek);
+    m_serialProductNumberSpin->setValue(values.serialProductNumber);
+    m_serialSequenceSpin->setValue(values.serialSequence);
+    setComboByValue(m_outputModeCombo, values.outputMode);
+    setComboByValue(m_pipeMaterialCombo, values.pipeMaterial);
+    setComboByValue(m_languageCombo, values.language);
+    setComboByValue(m_sensitivityCombo, values.sensitivity);
+    setComboByValue(m_screenOrientationCombo, values.screenOrientation);
 }
 
 void MainWindow::updateStatusLabel(const QString &message, bool opened)
