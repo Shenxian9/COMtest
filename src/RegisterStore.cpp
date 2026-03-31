@@ -333,9 +333,9 @@ void RegisterStore::initializeDefinitions()
     m_entryByAddress.clear();
 
     defineRegister({kAddrInstantFlow, QStringLiteral("瞬时流量"), RegisterKind::Holding, 2, RegisterFormat::Float, false, true,
-                    QStringLiteral("浮点数（大端），瞬时流量，用于调试。"), false});
+                    QStringLiteral("浮点数（低字在前、高字在后），瞬时流量，用于调试。"), false});
     defineRegister({kAddrInstantVelocity, QStringLiteral("瞬时流速"), RegisterKind::Holding, 2, RegisterFormat::Float, false, true,
-                    QStringLiteral("浮点数（大端），瞬时流速，用于调试。"), false});
+                    QStringLiteral("浮点数（低字在前、高字在后），瞬时流速，用于调试。"), false});
     defineRegister({kAddrZeroCutoff, QStringLiteral("零切下限"), RegisterKind::Holding, 2, RegisterFormat::Float, true, true,
                     QStringLiteral("零切值，程序单位（立方米每小时）。"), false});
     defineRegister({kAddrPipeOuterDiameter, QStringLiteral("管道外径"), RegisterKind::Holding, 2, RegisterFormat::Float, true, true,
@@ -481,13 +481,13 @@ void RegisterStore::setFloat(uint16_t address, float value)
 
 quint32 RegisterStore::getU32(uint16_t address) const
 {
-    return (static_cast<quint32>(reg(address)) << 16) | reg(address + 1);
+    return (static_cast<quint32>(reg(address + 1)) << 16) | reg(address);
 }
 
 void RegisterStore::setU32(uint16_t address, quint32 value)
 {
-    setReg(address, static_cast<quint16>((value >> 16) & 0xFFFF));
-    setReg(address + 1, static_cast<quint16>(value & 0xFFFF));
+    setReg(address, static_cast<quint16>(value & 0xFFFF));
+    setReg(address + 1, static_cast<quint16>((value >> 16) & 0xFFFF));
 }
 
 QJsonObject RegisterStore::toJson() const
