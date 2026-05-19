@@ -209,6 +209,11 @@ RegisterStore::QuickDebugValues RegisterStore::quickDebugValues() const
     values.language = reg(kAddrLanguage);
     values.sensitivity = reg(kAddrSensitivity);
     values.screenOrientation = reg(kAddrScreenOrientation);
+    values.baudRate = reg(kAddrBaudRate);
+    values.dataBits = reg(kAddrDataBits);
+    values.parity = reg(kAddrParity);
+    values.stopBits = reg(kAddrStopBits);
+    values.temperatureMeasurementEnabled = reg(kAddrTemperatureMeasurementEnabled);
     return values;
 }
 
@@ -235,6 +240,11 @@ void RegisterStore::applyQuickDebugValues(const QuickDebugValues &values)
     setReg(kAddrLanguage, values.language);
     setReg(kAddrSensitivity, values.sensitivity);
     setReg(kAddrScreenOrientation, values.screenOrientation);
+    setReg(kAddrBaudRate, values.baudRate);
+    setReg(kAddrDataBits, values.dataBits);
+    setReg(kAddrParity, values.parity);
+    setReg(kAddrStopBits, values.stopBits);
+    setReg(kAddrTemperatureMeasurementEnabled, values.temperatureMeasurementEnabled);
 
     QVector<uint16_t> changed;
     for (const auto &entry : m_entries) {
@@ -374,6 +384,16 @@ void RegisterStore::initializeDefinitions()
                     QStringLiteral("0=低，1=中，2=高。"), false});
     defineRegister({kAddrScreenOrientation, QStringLiteral("屏幕方向"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
                     QStringLiteral("0=正向，1=旋转90°，2=旋转180°，4=旋转270°。"), false});
+    defineRegister({kAddrBaudRate, QStringLiteral("波特率"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
+                    QStringLiteral("0=2400，1=4800，2=9600，4=19200，5=38400，6=115200；重启生效。"), false});
+    defineRegister({kAddrDataBits, QStringLiteral("数据位"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
+                    QStringLiteral("0=8位，1=7位；重启生效。"), false});
+    defineRegister({kAddrParity, QStringLiteral("校验位"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
+                    QStringLiteral("0=无校验，1=奇校验，2=偶校验；重启生效。"), false});
+    defineRegister({kAddrStopBits, QStringLiteral("停止位"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
+                    QStringLiteral("0=1位，1=2位；重启生效。"), false});
+    defineRegister({kAddrTemperatureMeasurementEnabled, QStringLiteral("测温使能"), RegisterKind::Holding, 1, RegisterFormat::U16, true, true,
+                    QStringLiteral("0=不测温，1=测温；重启生效。"), false});
 }
 
 void RegisterStore::initializeDefaults()
@@ -406,6 +426,11 @@ void RegisterStore::initializeDefaults()
     setReg(kAddrLanguage, 1);
     setReg(kAddrSensitivity, 1);
     setReg(kAddrScreenOrientation, 0);
+    setReg(kAddrBaudRate, 2);
+    setReg(kAddrDataBits, 0);
+    setReg(kAddrParity, 0);
+    setReg(kAddrStopBits, 0);
+    setReg(kAddrTemperatureMeasurementEnabled, 0);
 }
 
 void RegisterStore::defineRegister(const RegisterEntry &entry)

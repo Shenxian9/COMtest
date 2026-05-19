@@ -34,6 +34,11 @@ public:
         quint16 language = 1;
         quint16 sensitivity = 1;
         quint16 screenOrientation = 0;
+        quint16 baudRate = 2;
+        quint16 dataBits = 0;
+        quint16 parity = 0;
+        quint16 stopBits = 0;
+        quint16 temperatureMeasurementEnabled = 0;
     };
 
     explicit RegisterStore(QObject *parent = nullptr);
@@ -59,6 +64,11 @@ public:
     static constexpr uint16_t kAddrLanguage = 8221;
     static constexpr uint16_t kAddrSensitivity = 8222;
     static constexpr uint16_t kAddrScreenOrientation = 8223;
+    static constexpr uint16_t kAddrBaudRate = 8224;
+    static constexpr uint16_t kAddrDataBits = 8225;
+    static constexpr uint16_t kAddrParity = 8226;
+    static constexpr uint16_t kAddrStopBits = 8227;
+    static constexpr uint16_t kAddrTemperatureMeasurementEnabled = 8228;
 
     QVector<RegisterEntry> entries() const;
     const RegisterEntry *entryByAddress(uint16_t address) const;
