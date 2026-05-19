@@ -59,6 +59,11 @@ public:
     static constexpr uint16_t kAddrLanguage = 8221;
     static constexpr uint16_t kAddrSensitivity = 8222;
     static constexpr uint16_t kAddrScreenOrientation = 8223;
+    static constexpr uint16_t kAddrBaudRate = 8224;
+    static constexpr uint16_t kAddrDataBits = 8225;
+    static constexpr uint16_t kAddrParity = 8226;
+    static constexpr uint16_t kAddrStopBits = 8227;
+    static constexpr uint16_t kAddrTemperatureEnable = 8228;
 
     QVector<RegisterEntry> entries() const;
     const RegisterEntry *entryByAddress(uint16_t address) const;
