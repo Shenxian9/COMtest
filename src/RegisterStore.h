@@ -38,6 +38,13 @@ public:
 
     explicit RegisterStore(QObject *parent = nullptr);
 
+    static constexpr uint16_t kAddrSystemStatus = 0;
+    static constexpr uint16_t kAddrFlowDisplay = 8;
+    static constexpr uint16_t kAddrPowerOnTotal = 10;
+    static constexpr uint16_t kAddrTemperature = 12;
+    static constexpr uint16_t kAddrCalibrationTablePoints = 50;
+    static constexpr uint16_t kAddrCalibrationTableCoefficients = 66;
+
     static constexpr uint16_t kAddrInstantFlow = 8192;
     static constexpr uint16_t kAddrInstantVelocity = 8194;
     static constexpr uint16_t kAddrZeroCutoff = 8196;
@@ -59,6 +66,11 @@ public:
     static constexpr uint16_t kAddrLanguage = 8221;
     static constexpr uint16_t kAddrSensitivity = 8222;
     static constexpr uint16_t kAddrScreenOrientation = 8223;
+    static constexpr uint16_t kAddrBaudRate = 8224;
+    static constexpr uint16_t kAddrDataBits = 8225;
+    static constexpr uint16_t kAddrParity = 8226;
+    static constexpr uint16_t kAddrStopBits = 8227;
+    static constexpr uint16_t kAddrTemperatureEnable = 8228;
 
     QVector<RegisterEntry> entries() const;
     const RegisterEntry *entryByAddress(uint16_t address) const;
